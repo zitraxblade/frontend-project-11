@@ -6,10 +6,11 @@ export default {
   },
   rules: {
     semi: ['error', 'never'],
-    'comma-dangle': ['error', 'always-multiline'],
+    comma-dangle: ['error', 'always-multiline'],
     'arrow-parens': ['error', 'always'],
     'brace-style': ['error', '1tbs', { allowSingleLine: false }],
     'eol-last': ['error', 'always'],
+    'no-multiple-empty-lines': ['error', { max: 0 }],
+    'quote-props': ['error', 'as-needed']
   },
 }
-
