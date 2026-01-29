@@ -1,15 +1,16 @@
 import stylistic from '@stylistic/eslint-plugin'
+
 export default {
   plugins: {
     '@stylistic': stylistic,
   },
   rules: {
     semi: ['error', 'never'],
-    'comma-dangle': ['error', 'always-multiline'],
-    'arrow-parens': ['error', 'always'],
-    'brace-style': ['error', '1tbs', { allowSingleLine: false }],
-    'eol-last': ['error', 'always'],
-    'no-multiple-empty-lines': ['error', { max: 0 }],
-    'quote-props': ['error', 'as-needed'],
+    commaDangle: ['error', 'always-multiline'],
+    arrowParens: ['error', 'always'],
+    braceStyle: ['error', '1tbs', { allowSingleLine: false }],
+    eolLast: ['error', 'always'],
+    noMultipleEmptyLines: ['error', { max: 0 }],
+    quoteProps: ['error', 'as-needed'],
   },
 }
