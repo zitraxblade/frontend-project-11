@@ -21,33 +21,30 @@ i18next.init({
           empty: 'Не должно быть пустым',
           invalidUrl: 'Ссылка должна быть валидным URL',
           noRss: 'Ресурс не содержит валидный RSS',
-          network: 'Ошибка сети'
-        }
-      }
-    }
-  }
+          network: 'Ошибка сети',
+        },
+      },
+    },
+  },
 })
 
 const state = {
   feeds: [],
   posts: [],
-  readPosts: new Set()
+  readPosts: new Set(),
 }
 
 const schema = yup.string().url()
 
-const showFeedback = (message, type = 'error') =>
-{
+const showFeedback = (message, type = 'error') => {
   feedback.textContent = message
   feedback.classList.remove('valid-feedback', 'invalid-feedback')
   feedback.classList.add(type === 'success' ? 'valid-feedback' : 'invalid-feedback')
 }
 
-const renderFeeds = () =>
-{
+const renderFeeds = () => {
   feedsContainer.innerHTML = ''
-  state.feeds.forEach((feed) =>
-  {
+  state.feeds.forEach((feed) => {
     const div = document.createElement('div')
     div.classList.add('card', 'mb-3', 'p-3')
     div.innerHTML = `<h5>${feed.title}</h5><p>${feed.description}</p>`
@@ -55,11 +52,9 @@ const renderFeeds = () =>
   })
 }
 
-const renderPosts = () =>
-{
+const renderPosts = () => {
   postsContainer.innerHTML = ''
-  state.posts.forEach((post) =>
-  {
+  state.posts.forEach((post) => {
     const div = document.createElement('div')
     div.classList.add('mb-2')
     const readClass = state.readPosts.has(post.link) ? 'fw-normal' : 'fw-bold'
@@ -68,16 +63,14 @@ const renderPosts = () =>
       <button type="button" class="btn btn-sm btn-outline-primary ms-2">Просмотр</button>
     `
     const btn = div.querySelector('button')
-    btn.addEventListener('click', () =>
-    {
+    btn.addEventListener('click', () => {
       openModal(post)
     })
     postsContainer.appendChild(div)
   })
 }
 
-const openModal = (post) =>
-{
+const openModal = (post) => {
   state.readPosts.add(post.link)
   renderPosts()
 
@@ -91,10 +84,9 @@ const openModal = (post) =>
   modal.show()
 }
 
-const fetchRss = async (url) =>
-{
+const fetchRss = async (url) => {
   const response = await axios.get(
-    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`
+    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`,
   )
 
   const parser = new DOMParser()
@@ -103,32 +95,27 @@ const fetchRss = async (url) =>
   const title = doc.querySelector('channel > title')?.textContent
   const description = doc.querySelector('channel > description')?.textContent
 
-  if (!title)
-  {
+  if (!title) {
     throw new Error('no rss')
   }
 
-  const items = Array.from(doc.querySelectorAll('item')).map((item) =>
-  ({
+  const items = Array.from(doc.querySelectorAll('item')).map((item) => ({
     title: item.querySelector('title')?.textContent || '',
     description: item.querySelector('description')?.textContent || '',
-    link: item.querySelector('link')?.textContent || ''
+    link: item.querySelector('link')?.textContent || '',
   }))
 
   return { title, description, items }
 }
 
-form.addEventListener('submit', async (e) =>
-{
+form.addEventListener('submit', async (e) => {
   e.preventDefault()
   const url = input.value.trim()
 
-  try
-  {
+  try {
     await schema.validate(url)
 
-    if (state.feeds.some((f) => f.url === url))
-    {
+    if (state.feeds.some((f) => f.url === url)) {
       showFeedback(i18next.t('messages.duplicate'), 'error')
       return
     }
@@ -138,7 +125,7 @@ form.addEventListener('submit', async (e) =>
     state.feeds.push({
       url,
       title,
-      description
+      description,
     })
 
     state.posts.push(...items)
@@ -146,19 +133,14 @@ form.addEventListener('submit', async (e) =>
     renderPosts()
     showFeedback(i18next.t('messages.success'), 'success')
     input.value = ''
-  }
-  catch (err)
-  {
-    if (err.name === 'ValidationError')
-    {
+  } catch (err) {
+    if (err.name === 'ValidationError') {
       showFeedback(i18next.t('messages.invalidUrl'), 'error')
     }
-    else if (err.message === 'no rss')
-    {
+    else if (err.message === 'no rss') {
       showFeedback(i18next.t('messages.noRss'), 'error')
     }
-    else
-    {
+    else {
       showFeedback(i18next.t('messages.network'), 'error')
     }
   }
