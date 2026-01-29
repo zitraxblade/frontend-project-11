@@ -17,13 +17,14 @@
         <input type="text" name="url" class="form-control" aria-label="url" placeholder="Введите URL RSS" />
       </div>
       <button type="submit" class="btn btn-primary w-100">Добавить</button>
+      <div id="feedback" class="mt-2"></div>
     </form>
 
-    <div id="feedback-container" class="w-50 mx-auto mt-3"></div>
     <div id="feeds-container" class="mt-4"></div>
-    <ul id="posts-container" class="mt-4 list-group"></ul>
+    <div id="posts-container" class="mt-4"></div>
   </div>
 
+  <!-- Модальное окно -->
   <div class="modal fade" id="postModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -43,5 +44,3 @@
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
-
-

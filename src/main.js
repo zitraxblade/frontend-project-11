@@ -3,171 +3,185 @@ import * as yup from 'yup';
 import axios from 'axios';
 import './style.css';
 
-// Интернационализация
+// ---------- i18next ----------
 i18next.init({
   lng: 'ru',
   resources: {
     ru: {
       translation: {
-        form: { placeholder: 'Введите URL RSS', submit: 'Добавить' },
-        errors: {
-          invalidUrl: 'Ссылка должна быть валидным URL',
-          required: 'Не должно быть пустым',
-          duplicate: 'RSS уже существует',
-          loadError: 'Ошибка сети',
-          parseError: 'Ресурс не содержит валидный RSS',
+        form: {
+          placeholder: 'Введите URL RSS',
+          submit: 'Добавить',
         },
-        success: { feedAdded: 'RSS успешно загружен' },
-        post: { view: 'Просмотр' },
+        messages: {
+          success: 'RSS успешно загружен',
+        },
+        errors: {
+          required: 'Не должно быть пустым',
+          invalidUrl: 'Ссылка должна быть валидным URL',
+          duplicate: 'RSS уже существует',
+          parse: 'Ресурс не содержит валидный RSS',
+          network: 'Ошибка сети',
+        },
+        buttons: {
+          preview: 'Просмотр',
+        },
       },
     },
   },
 });
 
-// yup
+// ---------- yup ----------
 yup.setLocale({
-  string: { url: () => ({ key: 'errors.invalidUrl' }) },
-  mixed: { required: () => ({ key: 'errors.required' }) },
+  string: {
+    url: () => ({ key: 'errors.invalidUrl' }),
+  },
+  mixed: {
+    required: () => ({ key: 'errors.required' }),
+  },
 });
 
+// ---------- состояние ----------
 const state = {
   feeds: [],
   posts: [],
   readPosts: new Set(),
 };
 
-const schema = yup.object({ url: yup.string().url().required() });
-
+// ---------- DOM ----------
 const form = document.getElementById('rss-form');
 const input = form.querySelector('input[name="url"]');
-const feedbackContainer = document.getElementById('feedback-container');
 const feedsContainer = document.getElementById('feeds-container');
 const postsContainer = document.getElementById('posts-container');
+const feedback = document.createElement('div');
+feedback.classList.add('mt-2');
+form.append(feedback);
 
+// placeholder и кнопка через i18next
 input.placeholder = i18next.t('form.placeholder');
-form.querySelector('button').textContent = i18next.t('form.submit');
+form.querySelector('button[type="submit"]').textContent = i18next.t('form.submit');
 
-const showMessage = (text, type = 'success') => {
-  feedbackContainer.innerHTML = `<div class="alert alert-${type}" role="alert">${text}</div>`;
-};
-
+// ---------- прокси ----------
 const buildProxyUrl = (url) =>
   `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`;
 
-const parseRss = (xml) => {
+// ---------- парсер RSS ----------
+const parseRss = (xmlString) => {
   const parser = new DOMParser();
-  const doc = parser.parseFromString(xml, 'application/xml');
+  const doc = parser.parseFromString(xmlString, 'application/xml');
 
   const feedTitle = doc.querySelector('channel > title')?.textContent;
   const feedDescription = doc.querySelector('channel > description')?.textContent;
 
-  const items = Array.from(doc.querySelectorAll('item')).map((item) => ({
+  const items = doc.querySelectorAll('item');
+  if (!feedTitle || !items.length) {
+    const error = new Error('parse');
+    throw error;
+  }
+
+  const posts = Array.from(items).map((item) => ({
+    id: crypto.randomUUID(),
     title: item.querySelector('title')?.textContent,
     link: item.querySelector('link')?.textContent,
     description: item.querySelector('description')?.textContent,
   }));
 
-  if (!feedTitle || items.length === 0) throw new Error('parseError');
-  return { feedTitle, feedDescription, posts: items };
+  return { feedTitle, feedDescription, posts };
 };
 
-// Рендер
+// ---------- рендер ----------
 const renderFeeds = () => {
   feedsContainer.innerHTML = '';
   state.feeds.forEach((feed) => {
     const div = document.createElement('div');
-    div.classList.add('mb-3');
-    div.innerHTML = `<h3>${feed.feedTitle}</h3><p>${feed.feedDescription}</p>`;
-    feedsContainer.appendChild(div);
+    div.classList.add('card', 'mb-3', 'p-3');
+    div.innerHTML = `
+      <h5>${feed.title}</h5>
+      <p>${feed.description}</p>
+    `;
+    feedsContainer.append(div);
   });
 };
 
 const renderPosts = () => {
   postsContainer.innerHTML = '';
-  state.posts.forEach((post, i) => {
+  state.posts.forEach((post) => {
     const li = document.createElement('li');
-    li.className = 'list-group-item d-flex justify-content-between align-items-center';
-    li.innerHTML = `
-      <a href="${post.link}" target="_blank" class="${state.readPosts.has(i) ? 'fw-normal' : 'fw-bold'}">${post.title}</a>
-      <button type="button" class="btn btn-primary btn-sm" data-index="${i}">${i18next.t('post.view')}</button>
-    `;
+    li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start');
+    if (!state.readPosts.has(post.id)) {
+      li.classList.add('fw-bold');
+    } else {
+      li.classList.add('fw-normal');
+    }
+
+    const a = document.createElement('a');
+    a.href = post.link;
+    a.target = '_blank';
+    a.textContent = post.title;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.classList.add('btn', 'btn-primary', 'btn-sm');
+    btn.textContent = i18next.t('buttons.preview');
+
+    btn.addEventListener('click', () => {
+      state.readPosts.add(post.id);
+      renderPosts();
+      const modalTitle = document.getElementById('modalTitle');
+      const modalBody = document.getElementById('modalBody');
+      modalTitle.textContent = post.title;
+      modalBody.textContent = post.description;
+      const modalEl = document.getElementById('postModal');
+      const modal = new bootstrap.Modal(modalEl);
+      modal.show();
+    });
+
+    li.append(a, btn);
     postsContainer.appendChild(li);
   });
 };
 
-// Модальное окно
-const modal = new bootstrap.Modal(document.getElementById('postModal'));
-const modalTitle = document.getElementById('modalTitle');
-const modalBody = document.getElementById('modalBody');
-
-postsContainer.addEventListener('click', (e) => {
-  if (e.target.tagName === 'BUTTON') {
-    const index = Number(e.target.dataset.index);
-    const post = state.posts[index];
-    state.readPosts.add(index);
-    modalTitle.textContent = post.title;
-    modalBody.textContent = post.description;
-    modal.show();
-    renderPosts();
-  }
-});
-
-// Добавление фида
-const addFeed = (url) => {
-  return axios.get(buildProxyUrl(url))
-    .then((res) => {
-      const data = parseRss(res.data.contents);
-      state.feeds.push({ url, feedTitle: data.feedTitle, feedDescription: data.feedDescription });
-      state.posts = [...data.posts, ...state.posts];
-      renderFeeds();
-      renderPosts();
-      showMessage(i18next.t('success.feedAdded'));
-    });
-};
-
-// Обработчик формы
-form.addEventListener('submit', (e) => {
+// ---------- обработка формы ----------
+form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const url = input.value.trim();
+
   input.classList.remove('is-invalid');
+  feedback.textContent = '';
 
-  schema.validate({ url })
-    .then(() => {
-      if (state.feeds.some((f) => f.url === url)) {
-        input.classList.add('is-invalid');
-        showMessage(i18next.t('errors.duplicate'), 'danger');
-        return Promise.reject();
-      }
-      return addFeed(url);
-    })
-    .then(() => {
-      input.value = '';
-      input.focus();
-    })
-    .catch((err) => {
-      if (err?.key) showMessage(i18next.t(err.key), 'danger');
-      else if (err?.message === 'parseError') showMessage(i18next.t('errors.parseError'), 'danger');
-      else if (err) showMessage(i18next.t('errors.loadError'), 'danger');
+  if (!url) {
+    input.classList.add('is-invalid');
+    feedback.textContent = i18next.t('errors.required');
+    return;
+  }
+
+  const schema = yup.object({ url: yup.string().url().required() });
+
+  try {
+    await schema.validate({ url });
+
+    if (state.feeds.find((f) => f.url === url)) {
       input.classList.add('is-invalid');
-    });
+      feedback.textContent = i18next.t('errors.duplicate');
+      return;
+    }
+
+    const response = await axios.get(buildProxyUrl(url));
+    const data = parseRss(response.data.contents);
+
+    state.feeds.push({ url, title: data.feedTitle, description: data.feedDescription });
+    state.posts.unshift(...data.posts);
+
+    renderFeeds();
+    renderPosts();
+
+    input.value = '';
+    feedback.textContent = i18next.t('messages.success');
+  } catch (err) {
+    input.classList.add('is-invalid');
+    if (err.key) feedback.textContent = i18next.t(err.key);
+    else if (err.message === 'parse') feedback.textContent = i18next.t('errors.parse');
+    else if (err.isAxiosError) feedback.textContent = i18next.t('errors.network');
+    else feedback.textContent = i18next.t('errors.network');
+  }
 });
-
-// Автообновление
-const updateFeeds = () => {
-  const promises = state.feeds.map((feed) =>
-    axios.get(buildProxyUrl(feed.url))
-      .then((res) => {
-        const { posts } = parseRss(res.data.contents);
-        const newPosts = posts.filter((p) => !state.posts.some((sp) => sp.link === p.link));
-        if (newPosts.length > 0) {
-          state.posts = [...newPosts, ...state.posts];
-          renderPosts();
-        }
-      })
-      .catch(() => {})
-  );
-
-  Promise.all(promises).finally(() => setTimeout(updateFeeds, 5000));
-};
-
-updateFeeds();
