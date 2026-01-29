@@ -1,8 +1,7 @@
 import stylistic from '@stylistic/eslint-plugin'
-
 export default {
   plugins: {
-    '@stylistic': stylistic
+    '@stylistic': stylistic,
   },
   rules: {
     semi: ['error', 'never'], // идентичные кавычки вокруг 'semi'
@@ -14,4 +13,3 @@ export default {
     'quote-props': ['error', 'as-needed'],
   },
 }
-

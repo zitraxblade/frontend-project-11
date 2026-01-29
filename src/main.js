@@ -3,13 +3,11 @@ import i18next from 'i18next'
 import axios from 'axios'
 import * as yup from 'yup'
 import './style.css'
-
 const form = document.querySelector('#rss-form')
 const input = form.querySelector('input[name="url"]')
 const feedback = document.querySelector('#feedback')
 const feedsContainer = document.querySelector('#feeds-container')
 const postsContainer = document.querySelector('#posts-container')
-
 i18next.init({
   lng: 'ru',
   resources: {
@@ -27,21 +25,17 @@ i18next.init({
     },
   },
 })
-
 const state = {
   feeds: [],
   posts: [],
   readPosts: new Set(),
 }
-
 const schema = yup.string().url()
-
 const showFeedback = (message, type = 'error') => {
   feedback.textContent = message
   feedback.classList.remove('valid-feedback', 'invalid-feedback')
   feedback.classList.add(type === 'success' ? 'valid-feedback' : 'invalid-feedback')
 }
-
 const renderFeeds = () => {
   feedsContainer.innerHTML = ''
   state.feeds.forEach((feed) => {
@@ -51,7 +45,6 @@ const renderFeeds = () => {
     feedsContainer.appendChild(div)
   })
 }
-
 const renderPosts = () => {
   postsContainer.innerHTML = ''
   state.posts.forEach((post) => {
@@ -67,7 +60,6 @@ const renderPosts = () => {
     postsContainer.appendChild(div)
   })
 }
-
 const openModal = (post) => {
   state.readPosts.add(post.link)
   renderPosts()
@@ -78,10 +70,9 @@ const openModal = (post) => {
   const modal = new bootstrap.Modal(document.querySelector('#postModal'))
   modal.show()
 }
-
 const fetchRss = async (url) => {
   const response = await axios.get(
-    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`
+    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`,
   )
   const parser = new DOMParser()
   const doc = parser.parseFromString(response.data.contents, 'application/xml')
@@ -97,7 +88,6 @@ const fetchRss = async (url) => {
   }))
   return { title, description, items }
 }
-
 form.addEventListener('submit', async (e) => {
   e.preventDefault()
   const url = input.value.trim()
