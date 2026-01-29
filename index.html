@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RSS агрегатор</title>
+
+    <!-- Подключение Bootstrap и своих стилей -->
+    <link rel="stylesheet" href="/src/style.css">
+  </head>
+
+  <body>
+    <div class="container mt-5">
+      <h1 class="mb-4 text-center">RSS агрегатор</h1>
+
+      <form id="rss-form" class="w-50 mx-auto">
+        <div class="mb-3">
+          <input
+            type="text"
+            name="url"
+            class="form-control"
+            placeholder="Введите URL RSS"
+          />
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">
+          Добавить
+        </button>
+      </form>
+
+      <!-- Контейнеры для фидов и постов -->
+      <div id="feeds-container" class="mt-4"></div>
+      <div id="posts-container" class="mt-3"></div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
