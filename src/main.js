@@ -63,7 +63,7 @@ const renderPosts = () => {
       <button type="button" class="btn btn-sm btn-outline-primary ms-2">Просмотр</button>
     `
     const btn = div.querySelector('button')
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', () => {
       openModal(post)
     })
     postsContainer.appendChild(div)
@@ -86,7 +86,7 @@ const openModal = (post) => {
 
 const fetchRss = async (url) => {
   const response = await axios.get(
-    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`
+    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`,
   )
 
   const parser = new DOMParser()
@@ -108,32 +108,38 @@ const fetchRss = async (url) => {
   return { title, description, items }
 }
 
-form.addEventListener('submit', (e) => {
+form.addEventListener('submit', async (e) => {
   e.preventDefault()
   const url = input.value.trim()
 
   try {
-    schema.validate(url)
+    await schema.validate(url)
 
     if (state.feeds.some((f) => f.url === url)) {
       showFeedback(i18next.t('messages.duplicate'), 'error')
       return
     }
 
-    fetchRss(url).then(({ title, description, items }) => {
-      state.feeds.push({ url, title, description })
-      state.posts.push(...items)
-      renderFeeds()
-      renderPosts()
-      showFeedback(i18next.t('messages.success'), 'success')
-      input.value = ''
-    }).catch((err) => {
-      if (err.name === 'ValidationError') {
-        showFeedback(i18next.t('messages.invalidUrl'), 'error')
-      } else if (err.message === 'no rss') {
-        showFeedback(i18next.t('messages.noRss'), 'error')
-      } else {
-        showFeedback(i18next.t('messages.network'), 'error')
-      }
+    const { title, description, items } = await fetchRss(url)
+
+    state.feeds.push({
+      url,
+      title,
+      description,
     })
+
+    state.posts.push(...items)
+    renderFeeds()
+    renderPosts()
+    showFeedback(i18next.t('messages.success'), 'success')
+    input.value = ''
+  } catch (err) {
+    if (err.name === 'ValidationError') {
+      showFeedback(i18next.t('messages.invalidUrl'), 'error')
+    } else if (err.message === 'no rss') {
+      showFeedback(i18next.t('messages.noRss'), 'error')
+    } else {
+      showFeedback(i18next.t('messages.network'), 'error')
+    }
+  }
 })
