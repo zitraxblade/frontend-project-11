@@ -83,11 +83,13 @@ const fetchRss = async (url) => {
   if (!title) {
     throw new Error('no rss')
   }
-  const items = Array.from(doc.querySelectorAll('item')).map((item) => ({
-    title: item.querySelector('title')?.textContent || '',
-    description: item.querySelector('description')?.textContent || '',
-    link: item.querySelector('link')?.textContent || '',
-  }))
+  const items = Array.from(doc.querySelectorAll('item')).map((item) => {
+    return {
+      title: item.querySelector('title')?.textContent || '',
+      description: item.querySelector('description')?.textContent || '',
+      link: item.querySelector('link')?.textContent || '',
+    }
+  })
   return { title, description, items }
 }
 form.addEventListener('submit', async (e) => {
@@ -100,11 +102,7 @@ form.addEventListener('submit', async (e) => {
       return
     }
     const { title, description, items } = await fetchRss(url)
-    state.feeds.push({
-      url,
-      title,
-      description,
-    })
+    state.feeds.push({ url, title, description })
     state.posts.push(...items)
     renderFeeds()
     renderPosts()
