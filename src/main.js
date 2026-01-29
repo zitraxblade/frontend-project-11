@@ -1,3 +1,4 @@
+/* global bootstrap */
 import i18next from 'i18next'
 import axios from 'axios'
 import * as yup from 'yup'
@@ -20,17 +21,17 @@ i18next.init({
           empty: 'Не должно быть пустым',
           invalidUrl: 'Ссылка должна быть валидным URL',
           noRss: 'Ресурс не содержит валидный RSS',
-          network: 'Ошибка сети'
-        }
-      }
-    }
-  }
+          network: 'Ошибка сети',
+        },
+      },
+    },
+  },
 })
 
 const state = {
   feeds: [],
   posts: [],
-  readPosts: new Set()
+  readPosts: new Set(),
 }
 
 const schema = yup.string().url()
@@ -62,12 +63,14 @@ const renderPosts = () => {
       <button type="button" class="btn btn-sm btn-outline-primary ms-2">Просмотр</button>
     `
     const btn = div.querySelector('button')
-    btn.addEventListener('click', () => renderPostModal(post))
+    btn.addEventListener('click', () => {
+      openModal(post)
+    })
     postsContainer.appendChild(div)
   })
 }
 
-const renderPostModal = post => {
+const openModal = post => {
   state.readPosts.add(post.link)
   renderPosts()
   const modalTitle = document.querySelector('#modalTitle')
@@ -79,7 +82,9 @@ const renderPostModal = post => {
 }
 
 const fetchRss = async url => {
-  const response = await axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
+  const response = await axios.get(
+    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`,
+  )
   const parser = new DOMParser()
   const doc = parser.parseFromString(response.data.contents, 'application/xml')
 
@@ -90,7 +95,7 @@ const fetchRss = async url => {
   const items = Array.from(doc.querySelectorAll('item')).map(item => ({
     title: item.querySelector('title')?.textContent || '',
     description: item.querySelector('description')?.textContent || '',
-    link: item.querySelector('link')?.textContent || ''
+    link: item.querySelector('link')?.textContent || '',
   }))
 
   return { title, description, items }
@@ -109,7 +114,11 @@ form.addEventListener('submit', async e => {
     }
 
     const { title, description, items } = await fetchRss(url)
-    state.feeds.push({ url, title, description })
+    state.feeds.push({
+      url,
+      title,
+      description,
+    })
     state.posts.push(...items)
     renderFeeds()
     renderPosts()
@@ -124,5 +133,4 @@ form.addEventListener('submit', async e => {
       showFeedback(i18next.t('messages.network'))
     }
   }
-}
-)
+})
