@@ -44,7 +44,7 @@ const showFeedback = (message, type = 'error') => {
 
 const renderFeeds = () => {
   feedsContainer.innerHTML = ''
-  state.feeds.forEach(feed => {
+  state.feeds.forEach((feed) => {
     const div = document.createElement('div')
     div.classList.add('card', 'mb-3', 'p-3')
     div.innerHTML = `<h5>${feed.title}</h5><p>${feed.description}</p>`
@@ -54,7 +54,7 @@ const renderFeeds = () => {
 
 const renderPosts = () => {
   postsContainer.innerHTML = ''
-  state.posts.forEach(post => {
+  state.posts.forEach((post) => {
     const div = document.createElement('div')
     div.classList.add('mb-2')
     const readClass = state.readPosts.has(post.link) ? 'fw-normal' : 'fw-bold'
@@ -63,12 +63,14 @@ const renderPosts = () => {
       <button type="button" class="btn btn-sm btn-outline-primary ms-2">Просмотр</button>
     `
     const btn = div.querySelector('button')
-    btn.addEventListener('click', () => openModal(post))
+    btn.addEventListener('click', () => {
+      openModal(post)
+    })
     postsContainer.appendChild(div)
   })
 }
 
-const openModal = post => {
+const openModal = (post) => {
   state.readPosts.add(post.link)
   renderPosts()
 
@@ -82,9 +84,9 @@ const openModal = post => {
   modal.show()
 }
 
-const fetchRss = async url => {
+const fetchRss = async (url) => {
   const response = await axios.get(
-    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`
+    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`,
   )
 
   const parser = new DOMParser()
@@ -97,7 +99,7 @@ const fetchRss = async url => {
     throw new Error('no rss')
   }
 
-  const items = Array.from(doc.querySelectorAll('item')).map(item => ({
+  const items = Array.from(doc.querySelectorAll('item')).map((item) => ({
     title: item.querySelector('title')?.textContent || '',
     description: item.querySelector('description')?.textContent || '',
     link: item.querySelector('link')?.textContent || '',
@@ -106,21 +108,26 @@ const fetchRss = async url => {
   return { title, description, items }
 }
 
-form.addEventListener('submit', async e => {
+form.addEventListener('submit', async (e) => {
   e.preventDefault()
   const url = input.value.trim()
 
   try {
     await schema.validate(url)
 
-    if (state.feeds.some(f => f.url === url)) {
+    if (state.feeds.some((f) => f.url === url)) {
       showFeedback(i18next.t('messages.duplicate'), 'error')
       return
     }
 
     const { title, description, items } = await fetchRss(url)
 
-    state.feeds.push({ url, title, description })
+    state.feeds.push({
+      url,
+      title,
+      description,
+    })
+
     state.posts.push(...items)
     renderFeeds()
     renderPosts()
