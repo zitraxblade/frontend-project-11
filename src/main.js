@@ -21,17 +21,17 @@ i18next.init({
           empty: 'Не должно быть пустым',
           invalidUrl: 'Ссылка должна быть валидным URL',
           noRss: 'Ресурс не содержит валидный RSS',
-          network: 'Ошибка сети',
-        },
-      },
-    },
-  },
+          network: 'Ошибка сети'
+        }
+      }
+    }
+  }
 })
 
 const state = {
   feeds: [],
   posts: [],
-  readPosts: new Set(),
+  readPosts: new Set()
 }
 
 const schema = yup.string().url()
@@ -68,7 +68,7 @@ const renderPosts = () =>
       <button type="button" class="btn btn-sm btn-outline-primary ms-2">Просмотр</button>
     `
     const btn = div.querySelector('button')
-    btn.addEventListener('click', (postClick) =>
+    btn.addEventListener('click', () =>
     {
       openModal(post)
     })
@@ -94,7 +94,7 @@ const openModal = (post) =>
 const fetchRss = async (url) =>
 {
   const response = await axios.get(
-    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`,
+    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`
   )
 
   const parser = new DOMParser()
@@ -112,7 +112,7 @@ const fetchRss = async (url) =>
   ({
     title: item.querySelector('title')?.textContent || '',
     description: item.querySelector('description')?.textContent || '',
-    link: item.querySelector('link')?.textContent || '',
+    link: item.querySelector('link')?.textContent || ''
   }))
 
   return { title, description, items }
@@ -135,11 +135,10 @@ form.addEventListener('submit', async (e) =>
 
     const { title, description, items } = await fetchRss(url)
 
-    state.feeds.push(
-    {
+    state.feeds.push({
       url,
       title,
-      description,
+      description
     })
 
     state.posts.push(...items)
