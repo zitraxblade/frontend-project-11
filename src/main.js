@@ -1,186 +1,133 @@
 import i18next from 'i18next';
-import * as yup from 'yup';
 import axios from 'axios';
+import * as yup from 'yup';
 import './style.css';
 
-// i18next
+const form = document.querySelector('#rss-form');
+const input = form.querySelector('input[name="url"]');
+const feedback = document.querySelector('#feedback');
+const feedsContainer = document.querySelector('#feeds-container');
+const postsContainer = document.querySelector('#posts-container');
+
 i18next.init({
   lng: 'ru',
   resources: {
     ru: {
       translation: {
-        form: { placeholder: 'Введите URL RSS', submit: 'Добавить' },
-        messages: { success: 'RSS успешно загружен' },
-        errors: {
-          invalidUrl: 'Ссылка должна быть валидным URL',
-          required: 'Не должно быть пустым',
+        messages: {
+          success: 'RSS успешно загружен',
           duplicate: 'RSS уже существует',
-          loadError: 'Ошибка сети',
-          parseError: 'Ресурс не содержит валидный RSS',
+          empty: 'Не должно быть пустым',
+          invalidUrl: 'Ссылка должна быть валидным URL',
+          noRss: 'Ресурс не содержит валидный RSS',
+          network: 'Ошибка сети',
         },
-        buttons: { preview: 'Просмотр' },
       },
     },
   },
 });
 
-// yup + i18next
-yup.setLocale({
-  string: { url: () => ({ key: 'errors.invalidUrl' }) },
-  mixed: { required: () => ({ key: 'errors.required' }) },
-});
-
-// прокси
-const buildProxyUrl = (url) =>
-  `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`;
-
-// парсер
-const parseRss = (xmlString) => {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(xmlString, 'application/xml');
-
-  const feedTitle = doc.querySelector('channel > title')?.textContent;
-  const feedDescription = doc.querySelector('channel > description')?.textContent;
-
-  const items = doc.querySelectorAll('item');
-  const posts = Array.from(items).map((item) => ({
-    title: item.querySelector('title')?.textContent,
-    link: item.querySelector('link')?.textContent,
-    description: item.querySelector('description')?.textContent,
-    id: item.querySelector('guid')?.textContent || Math.random().toString(),
-  }));
-
-  if (!feedTitle || posts.length === 0) throw new Error('parseError');
-
-  return { feedTitle, feedDescription, posts };
+const state = {
+  feeds: [],
+  posts: [],
+  readPosts: new Set(),
 };
 
-// состояние
-const state = { feeds: [], posts: [], readPosts: new Set() };
+const schema = yup.string().url();
 
-// DOM
-const form = document.getElementById('rss-form');
-const input = form.querySelector('input[name="url"]');
-const feedback = document.getElementById('feedback');
-const feedsContainer = document.getElementById('feeds-container');
-const postsContainer = document.getElementById('posts-container');
-
-// тексты формы
-input.placeholder = i18next.t('form.placeholder');
-form.querySelector('button').textContent = i18next.t('form.submit');
-
-// рендер
-const renderFeed = ({ feedTitle, feedDescription }) => {
-  const div = document.createElement('div');
-  div.classList.add('card', 'p-3', 'mb-3');
-  div.innerHTML = `<h3>${feedTitle}</h3><p>${feedDescription}</p>`;
-  feedsContainer.appendChild(div);
+const showFeedback = (message, type = 'error') => {
+  feedback.textContent = message;
+  feedback.classList.remove('valid-feedback', 'invalid-feedback');
+  if (type === 'success') {
+    feedback.classList.add('valid-feedback');
+  } else {
+    feedback.classList.add('invalid-feedback');
+  }
 };
 
-const renderPosts = (posts) => {
-  const ul = document.createElement('ul');
-  ul.classList.add('list-group');
+const renderFeeds = () => {
+  feedsContainer.innerHTML = '';
+  state.feeds.forEach(feed => {
+    const div = document.createElement('div');
+    div.classList.add('card', 'mb-3', 'p-3');
+    div.innerHTML = `<h5>${feed.title}</h5><p>${feed.description}</p>`;
+    feedsContainer.appendChild(div);
+  });
+};
 
-  posts.forEach((post) => {
-    const li = document.createElement('li');
-    li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start');
-
-    const a = document.createElement('a');
-    a.href = post.link;
-    a.textContent = post.title;
-    a.target = '_blank';
-    a.classList.add(state.readPosts.has(post.id) ? 'fw-normal' : 'fw-bold');
-
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.textContent = i18next.t('buttons.preview');
-    btn.classList.add('btn', 'btn-outline-primary', 'btn-sm');
+const renderPosts = () => {
+  postsContainer.innerHTML = '';
+  state.posts.forEach(post => {
+    const div = document.createElement('div');
+    div.classList.add('mb-2');
+    const readClass = state.readPosts.has(post.link) ? 'fw-normal' : 'fw-bold';
+    div.innerHTML = `
+      <a href="${post.link}" target="_blank" class="${readClass}">${post.title}</a>
+      <button type="button" class="btn btn-sm btn-outline-primary ms-2">Просмотр</button>
+    `;
+    const btn = div.querySelector('button');
     btn.addEventListener('click', () => {
-      const modal = new bootstrap.Modal(document.getElementById('postModal'));
-      document.getElementById('modalTitle').textContent = post.title;
-      document.getElementById('modalBody').textContent = post.description;
+      state.readPosts.add(post.link);
+      renderPosts();
+      const modalTitle = document.querySelector('#modalTitle');
+      const modalBody = document.querySelector('#modalBody');
+      modalTitle.textContent = post.title;
+      modalBody.textContent = post.description;
+      const modal = new bootstrap.Modal(document.querySelector('#postModal'));
       modal.show();
-
-      state.readPosts.add(post.id);
-      a.classList.replace('fw-bold', 'fw-normal');
     });
-
-    li.appendChild(a);
-    li.appendChild(btn);
-    ul.appendChild(li);
-  });
-
-  postsContainer.prepend(ul);
-};
-
-// обновление постов
-const updateFeeds = () => {
-  state.feeds.forEach((url) => {
-    axios.get(buildProxyUrl(url))
-      .then((res) => {
-        const { posts } = parseRss(res.data.contents);
-        const newPosts = posts.filter((p) => !state.posts.some((sp) => sp.id === p.id));
-        if (newPosts.length > 0) {
-          state.posts.push(...newPosts);
-          renderPosts(newPosts);
-        }
-      })
-      .catch(() => { /* сетевые ошибки игнорируем для обновления */ })
-      .finally(() => setTimeout(updateFeeds, 5000));
+    postsContainer.appendChild(div);
   });
 };
 
-// обработчик формы
-form.addEventListener('submit', (e) => {
+const fetchRss = async (url) => {
+  try {
+    const response = await axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`);
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(response.data.contents, 'application/xml');
+
+    const title = doc.querySelector('channel > title')?.textContent;
+    const description = doc.querySelector('channel > description')?.textContent;
+    if (!title) throw new Error('no rss');
+
+    const items = Array.from(doc.querySelectorAll('item')).map(item => ({
+      title: item.querySelector('title')?.textContent || '',
+      description: item.querySelector('description')?.textContent || '',
+      link: item.querySelector('link')?.textContent || '',
+    }));
+
+    return { title, description, items };
+  } catch (e) {
+    throw e;
+  }
+};
+
+form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const url = input.value.trim();
 
-  input.classList.remove('is-invalid');
-  feedback.textContent = '';
+  try {
+    await schema.validate(url);
 
-  const schema = yup.object({ url: yup.string().url().required() });
+    if (state.feeds.some(f => f.url === url)) {
+      showFeedback(i18next.t('messages.duplicate'));
+      return;
+    }
 
-  schema.validate({ url })
-    .then(() => {
-      if (state.feeds.includes(url)) {
-        input.classList.add('is-invalid');
-        feedback.textContent = i18next.t('errors.duplicate');
-        return Promise.reject();
-      }
-      return axios.get(buildProxyUrl(url));
-    })
-    .then((res) => {
-      let data;
-      try {
-        data = parseRss(res.data.contents);
-      } catch {
-        input.classList.add('is-invalid');
-        feedback.textContent = i18next.t('errors.parseError');
-        return Promise.reject();
-      }
-
-      state.feeds.push(url);
-      state.posts.push(...data.posts);
-      renderFeed(data);
-      renderPosts(data.posts);
-
-      input.value = '';
-      input.focus();
-      feedback.textContent = i18next.t('messages.success');
-
-      if (!window.updateFeedsStarted) {
-        window.updateFeedsStarted = true;
-        updateFeeds();
-      }
-    })
-    .catch((err) => {
-      if (err.key) {
-        input.classList.add('is-invalid');
-        feedback.textContent = i18next.t(err.key);
-      } else if (!feedback.textContent) {
-        input.classList.add('is-invalid');
-        feedback.textContent = i18next.t('errors.loadError');
-      }
-    });
+    const { title, description, items } = await fetchRss(url);
+    state.feeds.push({ url, title, description });
+    state.posts.push(...items);
+    renderFeeds();
+    renderPosts();
+    showFeedback(i18next.t('messages.success'), 'success');
+    input.value = '';
+  } catch (err) {
+    if (err.name === 'ValidationError') {
+      showFeedback(i18next.t('messages.invalidUrl'));
+    } else if (err.message === 'no rss') {
+      showFeedback(i18next.t('messages.noRss'));
+    } else {
+      showFeedback(i18next.t('messages.network'));
+    }
+  }
 });
-
