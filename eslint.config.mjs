@@ -1,10 +1,11 @@
 import stylistic from '@stylistic/eslint-plugin'
+
 export default {
   plugins: {
-    '@stylistic': stylistic,
+    '@stylistic': stylistic
   },
   rules: {
-    semi: ['error', 'never'],
+    semi: ['error', 'never'], // идентичные кавычки вокруг 'semi'
     'comma-dangle': ['error', 'always-multiline'],
     'arrow-parens': ['error', 'always'],
     'brace-style': ['error', '1tbs', { allowSingleLine: false }],
@@ -13,3 +14,4 @@ export default {
     'quote-props': ['error', 'as-needed'],
   },
 }
+
