@@ -63,9 +63,7 @@ const renderPosts = () => {
       <button type="button" class="btn btn-sm btn-outline-primary ms-2">Просмотр</button>
     `
     const btn = div.querySelector('button')
-    btn.addEventListener('click', () => {
-      openModal(post)
-    })
+    btn.addEventListener('click', () => openModal(post))
     postsContainer.appendChild(div)
   })
 }
@@ -90,9 +88,7 @@ const fetchRss = async (url) => {
 
   const title = doc.querySelector('channel > title')?.textContent
   const description = doc.querySelector('channel > description')?.textContent
-  if (!title) {
-    throw new Error('no rss')
-  }
+  if (!title) throw new Error('no rss')
 
   const items = Array.from(doc.querySelectorAll('item')).map((item) => ({
     title: item.querySelector('title')?.textContent || '',
@@ -116,11 +112,7 @@ form.addEventListener('submit', async (e) => {
     }
 
     const { title, description, items } = await fetchRss(url)
-    state.feeds.push({
-      url,
-      title,
-      description,
-    })
+    state.feeds.push({ url, title, description })
     state.posts.push(...items)
     renderFeeds()
     renderPosts()
