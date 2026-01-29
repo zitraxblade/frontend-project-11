@@ -101,3 +101,50 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+/* Контейнеры для фидов и постов */
+#feeds-container,
+#posts-container {
+  margin-top: 1rem;
+}
+
+/* Новые посты — жирные */
+.post-new {
+  font-weight: 700; /* fw-bold */
+}
+
+/* Прочитанные посты — нормальные */
+.post-read {
+  font-weight: 400; /* fw-normal */
+}
+
+/* Кнопка предпросмотра */
+.btn-preview {
+  margin-left: 0.5rem;
+}
+
+/* Тексты фидов */
+.feed-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.feed-description {
+  font-size: 1rem;
+  color: #555;
+  margin-bottom: 0.5rem;
+}
+
+/* Список постов */
+.posts-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.posts-list a {
+  text-decoration: none;
+}
+.posts-list a:hover {
+  text-decoration: underline;
+}
