@@ -4,7 +4,7 @@ import axios from 'axios';
 import './style.css';
 
 document.addEventListener('DOMContentLoaded', () => {
-  // ---------- i18next ----------
+  // i18next для интерфейса
   i18next.init({
     lng: 'ru',
     resources: {
@@ -23,17 +23,17 @@ document.addEventListener('DOMContentLoaded', () => {
     },
   });
 
-  // ---------- yup + i18next ----------
+  // yup для валидации
   yup.setLocale({
     string: { url: () => ({ key: 'errors.invalidUrl' }) },
     mixed: { required: () => ({ key: 'errors.required' }) },
   });
 
-  // ---------- прокси ----------
+  // прокси для обхода CORS
   const buildProxyUrl = (url) =>
     `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`;
 
-  // ---------- парсер RSS ----------
+  // парсер RSS
   const parseRss = (xmlString) => {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlString, 'application/xml');
@@ -47,11 +47,11 @@ document.addEventListener('DOMContentLoaded', () => {
     return { feedTitle, feedDescription, posts: items };
   };
 
-  // ---------- состояние ----------
+  // состояние
   const feeds = [];
   const schema = yup.object({ url: yup.string().url().required() });
 
-  // ---------- DOM ----------
+  // DOM
   const form = document.getElementById('rss-form');
   const input = form.querySelector('input[name="url"]');
   const feedsContainer = document.getElementById('feeds-container');
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
   input.placeholder = i18next.t('form.placeholder');
   form.querySelector('button').textContent = i18next.t('form.submit');
 
-  // ---------- рендер ----------
+  // рендер фида
   const renderFeed = (title, description) => {
     const div = document.createElement('div');
     div.classList.add('mt-4');
@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     feedsContainer.appendChild(div);
   };
 
+  // рендер постов
   const renderPosts = (posts) => {
     const ul = document.createElement('ul');
     ul.classList.add('mt-3');
@@ -83,7 +84,31 @@ document.addEventListener('DOMContentLoaded', () => {
     postsContainer.appendChild(ul);
   };
 
-  // ---------- обработчик формы ----------
+  // обновление одного фида
+  const updateFeed = (feed) => {
+    return axios.get(buildProxyUrl(feed.url))
+      .then(response => {
+        const data = parseRss(response.data.contents);
+        const newPosts = data.posts.filter(post => !feed.posts.some(p => p.link === post.link));
+        if (newPosts.length > 0) {
+          feed.posts.push(...newPosts);
+          renderPosts(newPosts);
+        }
+      })
+      .catch(err => console.error(`Ошибка обновления фида ${feed.url}:`, err));
+  };
+
+  // рекурсивная проверка всех фидов каждые 5 секунд
+  const startUpdatingFeeds = () => {
+    const checkFeeds = () => {
+      const promises = feeds.map(feed => updateFeed(feed));
+      Promise.all(promises)
+        .finally(() => setTimeout(checkFeeds, 5000));
+    };
+    checkFeeds();
+  };
+
+  // обработчик формы
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const url = input.value.trim();
@@ -91,32 +116,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     schema.validate({ url })
       .then(() => {
-        if (feeds.includes(url)) return Promise.reject({ key: 'errors.duplicate' });
-
+        if (feeds.some(f => f.url === url)) return Promise.reject({ key: 'errors.duplicate' });
         return axios.get(buildProxyUrl(url));
       })
-      .then((response) => {
-        const xml = response.data.contents;
-        const data = parseRss(xml);
+      .then(response => {
+        const data = parseRss(response.data.contents);
+        const feedObj = { url, title: data.feedTitle, description: data.feedDescription, posts: data.posts };
+        feeds.push(feedObj);
 
-        feeds.push(url);
         renderFeed(data.feedTitle, data.feedDescription);
         renderPosts(data.posts);
 
         input.value = '';
         input.focus();
-      })
-      .catch((err) => {
-        input.classList.add('is-invalid');
 
+        startUpdatingFeeds();
+      })
+      .catch(err => {
+        input.classList.add('is-invalid');
         if (err.key) console.log(i18next.t(err.key));
         else if (err.message === 'parseError') console.log(i18next.t('errors.parseError'));
         else console.log(i18next.t('errors.loadError'));
       });
   });
 
-  // ---------- добавим сразу русский RSS для теста ----------
-  form.querySelector('input').value = 'https://lorem-rss.hexlet.app/feed?locale=ru';
+  // сразу добавляем русский тестовый фид
+  input.value = 'https://lorem-rss.hexlet.app/feed?locale=ru';
   form.dispatchEvent(new Event('submit'));
 });
 
