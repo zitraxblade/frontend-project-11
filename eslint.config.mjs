@@ -12,3 +12,4 @@ export default {
     'eol-last': ['error', 'always'],
   },
 }
+
