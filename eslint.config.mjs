@@ -1,4 +1,4 @@
-import stylistic from '@stylistic/eslint-plugin';
+import stylistic from '@stylistic/eslint-plugin'
 export default {
   plugins: {
     stylistic,
@@ -10,4 +10,4 @@ export default {
     'stylistic/comma-dangle': ['error', 'always-multiline'],
     'stylistic/no-multiple-empty-lines': ['error', { max: 0 }],
   },
-};
+}
