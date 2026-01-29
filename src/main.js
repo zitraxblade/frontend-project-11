@@ -83,7 +83,7 @@ const openModal = (post) => {
 
 const fetchRss = async (url) => {
   const response = await axios.get(
-    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`
+    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`,
   )
   const parser = new DOMParser()
   const doc = parser.parseFromString(response.data.contents, 'application/xml')
