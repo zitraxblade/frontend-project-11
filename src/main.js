@@ -38,16 +38,12 @@ const schema = yup.string().url();
 const showFeedback = (message, type = 'error') => {
   feedback.textContent = message;
   feedback.classList.remove('valid-feedback', 'invalid-feedback');
-  if (type === 'success') {
-    feedback.classList.add('valid-feedback');
-  } else {
-    feedback.classList.add('invalid-feedback');
-  }
+  feedback.classList.add(type === 'success' ? 'valid-feedback' : 'invalid-feedback');
 };
 
 const renderFeeds = () => {
   feedsContainer.innerHTML = '';
-  state.feeds.forEach(feed => {
+  state.feeds.forEach((feed) => {
     const div = document.createElement('div');
     div.classList.add('card', 'mb-3', 'p-3');
     div.innerHTML = `<h5>${feed.title}</h5><p>${feed.description}</p>`;
@@ -57,7 +53,7 @@ const renderFeeds = () => {
 
 const renderPosts = () => {
   postsContainer.innerHTML = '';
-  state.posts.forEach(post => {
+  state.posts.forEach((post) => {
     const div = document.createElement('div');
     div.classList.add('mb-2');
     const readClass = state.readPosts.has(post.link) ? 'fw-normal' : 'fw-bold';
@@ -73,7 +69,7 @@ const renderPosts = () => {
       const modalBody = document.querySelector('#modalBody');
       modalTitle.textContent = post.title;
       modalBody.textContent = post.description;
-      const modal = new bootstrap.Modal(document.querySelector('#postModal'));
+      const modal = new bootstrap.Modal(document.querySelector('#postModal')); // глобальный bootstrap
       modal.show();
     });
     postsContainer.appendChild(div);
@@ -81,25 +77,23 @@ const renderPosts = () => {
 };
 
 const fetchRss = async (url) => {
-  try {
-    const response = await axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`);
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(response.data.contents, 'application/xml');
+  const response = await axios.get(
+    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`
+  );
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(response.data.contents, 'application/xml');
 
-    const title = doc.querySelector('channel > title')?.textContent;
-    const description = doc.querySelector('channel > description')?.textContent;
-    if (!title) throw new Error('no rss');
+  const title = doc.querySelector('channel > title')?.textContent;
+  const description = doc.querySelector('channel > description')?.textContent;
+  if (!title) throw new Error('no rss');
 
-    const items = Array.from(doc.querySelectorAll('item')).map(item => ({
-      title: item.querySelector('title')?.textContent || '',
-      description: item.querySelector('description')?.textContent || '',
-      link: item.querySelector('link')?.textContent || '',
-    }));
+  const items = Array.from(doc.querySelectorAll('item')).map((item) => ({
+    title: item.querySelector('title')?.textContent || '',
+    description: item.querySelector('description')?.textContent || '',
+    link: item.querySelector('link')?.textContent || '',
+  }));
 
-    return { title, description, items };
-  } catch (e) {
-    throw e;
-  }
+  return { title, description, items };
 };
 
 form.addEventListener('submit', async (e) => {
@@ -109,7 +103,7 @@ form.addEventListener('submit', async (e) => {
   try {
     await schema.validate(url);
 
-    if (state.feeds.some(f => f.url === url)) {
+    if (state.feeds.some((f) => f.url === url)) {
       showFeedback(i18next.t('messages.duplicate'));
       return;
     }
