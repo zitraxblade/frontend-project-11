@@ -81,7 +81,7 @@ const openModal = (post) => {
 
 const fetchRss = async (url) => {
   const response = await axios.get(
-    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`,
+    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`
   )
   const parser = new DOMParser()
   const doc = parser.parseFromString(response.data.contents, 'application/xml')
@@ -110,12 +110,16 @@ form.addEventListener('submit', async (e) => {
     await schema.validate(url)
 
     if (state.feeds.some((f) => f.url === url)) {
-      showFeedback(i18next.t('messages.duplicate'))
+      showFeedback(i18next.t('messages.duplicate'), 'error')
       return
     }
 
     const { title, description, items } = await fetchRss(url)
-    state.feeds.push({ url, title, description })
+    state.feeds.push({
+      url,
+      title,
+      description,
+    })
     state.posts.push(...items)
     renderFeeds()
     renderPosts()
@@ -123,11 +127,11 @@ form.addEventListener('submit', async (e) => {
     input.value = ''
   } catch (err) {
     if (err.name === 'ValidationError') {
-      showFeedback(i18next.t('messages.invalidUrl'))
+      showFeedback(i18next.t('messages.invalidUrl'), 'error')
     } else if (err.message === 'no rss') {
-      showFeedback(i18next.t('messages.noRss'))
+      showFeedback(i18next.t('messages.noRss'), 'error')
     } else {
-      showFeedback(i18next.t('messages.network'))
+      showFeedback(i18next.t('messages.network'), 'error')
     }
   }
 })
