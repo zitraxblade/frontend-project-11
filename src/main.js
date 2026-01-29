@@ -94,7 +94,7 @@ const fetchRss = async (url) => {
     throw new Error('no rss')
   }
 
-  const items = Array.from(doc.querySelectorAll('item')).map((item) => ({
+  const items = Array.from(doc.querySelectorAll('item')).map(item => ({
     title: item.querySelector('title')?.textContent || '',
     description: item.querySelector('description')?.textContent || '',
     link: item.querySelector('link')?.textContent || '',
@@ -110,7 +110,7 @@ form.addEventListener('submit', async (e) => {
   try {
     await schema.validate(url)
 
-    if (state.feeds.some((f) => f.url === url)) {
+    if (state.feeds.some(f => f.url === url)) {
       showFeedback(i18next.t('messages.duplicate'), 'error')
       return
     }
