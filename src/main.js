@@ -1,5 +1,4 @@
 import axios from 'axios';
-import './style.css';
 
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('rss-form');
@@ -21,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
       title: item.querySelector('title')?.textContent || 'Без заголовка',
       link: item.querySelector('link')?.textContent || '#',
       description: item.querySelector('description')?.textContent || 'Нет описания',
-      read: false
+      read: false,
     }));
 
     if (!feedTitle || items.length === 0) throw new Error('parseError');
@@ -54,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const button = document.createElement('button');
       button.type = 'button';
-      button.textContent = 'Предпросмотр';
+      button.textContent = 'Просмотр';
       button.classList.add('btn', 'btn-sm', 'btn-outline-primary', 'ms-2');
 
       button.addEventListener('click', () => {
@@ -90,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
           renderPosts(newPosts);
         }
       })
-      .catch(err => console.error(`Ошибка обновления фида ${feed.url}:`, err));
+      .catch(() => console.error('Ошибка сети'));
   };
 
   const startUpdatingFeeds = () => {
@@ -105,8 +104,13 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     const url = input.value.trim();
 
+    if (!url) {
+      alert('Не должно быть пустым');
+      return;
+    }
+
     if (feeds.some(f => f.url === url)) {
-      alert('Этот RSS уже добавлен');
+      alert('RSS уже существует');
       return;
     }
 
@@ -123,11 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
         input.focus();
 
         startUpdatingFeeds();
+        console.log('RSS успешно загружен');
       })
-      .catch(() => alert('Ошибка загрузки RSS'));
+      .catch(() => alert('Ресурс не содержит валидный RSS или ошибка сети'));
   });
-
-  // пример автозагрузки русского фида
-  input.value = 'https://lorem-rss.hexlet.app/feed?locale=ru';
-  form.dispatchEvent(new Event('submit'));
 });
+
